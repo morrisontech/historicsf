@@ -3,6 +3,7 @@ package rocks.morrisontech.historicsf;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -16,6 +17,7 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.gson.Gson;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -24,6 +26,8 @@ import java.io.InputStreamReader;
 import java.net.URL;
 
 import javax.net.ssl.HttpsURLConnection;
+
+import rocks.morrisontech.historicsf.entity.LandmarkEntity;
 
 public class MainActivity extends AppCompatActivity
         implements OnMapReadyCallback {
@@ -44,7 +48,7 @@ public class MainActivity extends AppCompatActivity
             MapFragment mMapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.fragment_map);
             mMapFragment.getMapAsync(this);
             // async task to download initial historic districts and sites
-            new DownloadData().execute("https://data.sfgov.org/resource/vnrd-fpg7.json?$$app_token=XmhHBPPmpGboNkk0yEwWb3R46");
+            new DownloadData().execute("https://data.sfgov.org/resource/798h-cfqf.json?$q=market");
         } else {
             // display error
         }
@@ -55,6 +59,7 @@ public class MainActivity extends AppCompatActivity
      * OnMarkerClickListener
      * OnPolygonClickListener
      * setMapToolbarEnabled(true)
+     *
      * @param googleMap
      */
     @Override
@@ -64,19 +69,19 @@ public class MainActivity extends AppCompatActivity
 
         LatLng sanFrancisco = new LatLng(37.763147, -122.445662);
 
-       mGoogleMap.addMarker(new MarkerOptions().position(sanFrancisco));
-       mGoogleMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
-           @Override
-           public View getInfoWindow(Marker marker) {
-               return null;
-           }
+        mGoogleMap.addMarker(new MarkerOptions().position(sanFrancisco));
+        mGoogleMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
+            @Override
+            public View getInfoWindow(Marker marker) {
+                return null;
+            }
 
-           @Override
-           public View getInfoContents(Marker marker) {
-               View infoWindowView = getLayoutInflater().inflate(R.layout.marker_info, null);
-               return infoWindowView;
-           }
-       });
+            @Override
+            public View getInfoContents(Marker marker) {
+                View infoWindowView = getLayoutInflater().inflate(R.layout.marker_info, null);
+                return infoWindowView;
+            }
+        });
 
         new GoogleMap.OnMarkerClickListener() {
             @Override
@@ -91,17 +96,31 @@ public class MainActivity extends AppCompatActivity
 
     private class DownloadData extends AsyncTask<String, Void, String> {
 
-
         StringBuilder jsonString = new StringBuilder();
         HttpsURLConnection urlConnection;
         BufferedReader reader = null;
 
         @Override
         protected String doInBackground(String... strings) {
+
+            // filter params
+            String searchParam;
+
             // build uri
             // download and return json string
-            String url = strings[0];
+
             try {
+
+                Uri.Builder builder = new Uri.Builder();
+                builder.scheme("https");
+                builder.authority("data.sfgov.org");
+                builder.appendPath("resource");
+                builder.appendPath(/*endpoint*/"798h-cfqf.json");
+                builder.appendQueryParameter("$q", "mission");
+
+                String url = builder.build().toString();
+                Log.i("URL", url);
+
                 // build custom URL here based on params passed in String... strings
                 URL serviceUrl = new URL(url);
                 urlConnection = (HttpsURLConnection) serviceUrl.openConnection();
@@ -119,20 +138,29 @@ public class MainActivity extends AppCompatActivity
                 // only returns null if there is an exception
                 return String.valueOf(jsonString);
 
-        } catch (IOException e) {
-            Log.e(LOG_TAG, "unable to retrieve data");
-            return null;
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (final IOException e) {
-                    Log.e("PlaceholderFragment", "Error closing stream", e);
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "unable to retrieve data");
+                return null;
+            } finally {
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (final IOException e) {
+                        Log.e("PlaceholderFragment", "Error closing stream", e);
+                    }
                 }
             }
         }
-    }
 
+        @Override
+        protected void onPostExecute(String s) {
+            Gson gson = new Gson();
 
+            LandmarkEntity[] landmarkEntities = gson.fromJson(s, LandmarkEntity[].class);
+
+            // iterate through array and get each coordinate point to add marker
+
+            super.onPostExecute(s);
+        }
     }
 }
