@@ -8,6 +8,7 @@ public class DistrictEntity {
 
 
 
+
 //    json example --
 //    {
 //        "appendix": "H",
