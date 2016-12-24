@@ -116,7 +116,8 @@ public class MainActivity extends AppCompatActivity
                 builder.authority("data.sfgov.org");
                 builder.appendPath("resource");
                 builder.appendPath(/*endpoint*/"798h-cfqf.json");
-                builder.appendQueryParameter("$q", "mission");
+                builder.appendQueryParameter("$$app_token", "XmhHBPPmpGboNkk0yEwWb3R46");
+
 
                 String url = builder.build().toString();
                 Log.i("URL", url);
