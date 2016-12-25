@@ -153,6 +153,7 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+<<<<<<< HEAD
         @Override
         protected void onPostExecute(String s) {
             Gson gson = new Gson();
@@ -163,5 +164,8 @@ public class MainActivity extends AppCompatActivity
 
             super.onPostExecute(s);
         }
+=======
+
+>>>>>>> soda-android
     }
 }
