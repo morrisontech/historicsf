@@ -3,6 +3,7 @@ package rocks.morrisontech.historicsf;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -16,6 +17,7 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.gson.Gson;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -24,6 +26,8 @@ import java.io.InputStreamReader;
 import java.net.URL;
 
 import javax.net.ssl.HttpsURLConnection;
+
+import rocks.morrisontech.historicsf.entity.LandmarkEntity;
 
 public class MainActivity extends AppCompatActivity
         implements OnMapReadyCallback {
@@ -44,7 +48,7 @@ public class MainActivity extends AppCompatActivity
             MapFragment mMapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.fragment_map);
             mMapFragment.getMapAsync(this);
             // async task to download initial historic districts and sites
-            new DownloadData().execute("https://data.sfgov.org/resource/vnrd-fpg7.json?$$app_token=XmhHBPPmpGboNkk0yEwWb3R46");
+            new DownloadData().execute();
         } else {
             // display error
         }
@@ -104,7 +108,7 @@ public class MainActivity extends AppCompatActivity
 
             // build uri
             // download and return json string
-            String url = strings[0];
+
             try {
 
                 Uri.Builder builder = new Uri.Builder();
