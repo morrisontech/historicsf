@@ -3,12 +3,10 @@ package rocks.morrisontech.historicsf;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
+import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -17,23 +15,16 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.gson.Gson;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
-
-import javax.net.ssl.HttpsURLConnection;
 
 import rocks.morrisontech.historicsf.entity.LandmarkEntity;
 
 public class MainActivity extends AppCompatActivity
-        implements OnMapReadyCallback {
+        implements OnMapReadyCallback, OnTaskCompleted {
 
     private static final String LOG_TAG = "Main Activity";
     private GoogleMap mGoogleMap;
+    private LandmarkEntity[] mLandmarkEntities;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,7 +39,7 @@ public class MainActivity extends AppCompatActivity
             MapFragment mMapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.fragment_map);
             mMapFragment.getMapAsync(this);
             // async task to download initial historic districts and sites
-            new DownloadData().execute();
+            new DownloadData(this).execute();
         } else {
             // display error
         }
@@ -59,6 +50,7 @@ public class MainActivity extends AppCompatActivity
      * OnMarkerClickListener
      * OnPolygonClickListener
      * setMapToolbarEnabled(true)
+     *
      * @param googleMap
      */
     @Override
@@ -66,18 +58,21 @@ public class MainActivity extends AppCompatActivity
         mGoogleMap = googleMap;
         mGoogleMap.getUiSettings().setMapToolbarEnabled(true);
 
+        // used to set center view
         LatLng sanFrancisco = new LatLng(37.763147, -122.445662);
 
-       mGoogleMap.addMarker(new MarkerOptions().position(sanFrancisco));
-       mGoogleMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
-           @Override
-           public View getInfoWindow(Marker marker) {
-               return null;
-           }
+        mGoogleMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
+            @Override
+            public View getInfoWindow(Marker marker) {
+                return null;
+            }
 
            @Override
            public View getInfoContents(Marker marker) {
+               LandmarkEntity landmarkEntity = (LandmarkEntity) marker.getTag();
                View infoWindowView = getLayoutInflater().inflate(R.layout.marker_info, null);
+               TextView landmarkTitleText = (TextView) infoWindowView.findViewById(R.id.title_textView);
+               landmarkTitleText.setText(landmarkEntity.getName());
                return infoWindowView;
            }
        });
@@ -93,77 +88,18 @@ public class MainActivity extends AppCompatActivity
         mGoogleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(sanFrancisco, 12f));
     }
 
-    private class DownloadData extends AsyncTask<String, Void, String> {
-
-
-        StringBuilder jsonString = new StringBuilder();
-        HttpsURLConnection urlConnection;
-        BufferedReader reader = null;
-
-        @Override
-        protected String doInBackground(String... strings) {
-
-            // filter params
-            String searchParam;
-
-            // build uri
-            // download and return json string
-
-            try {
-
-                Uri.Builder builder = new Uri.Builder();
-                builder.scheme("https");
-                builder.authority("data.sfgov.org");
-                builder.appendPath("resource");
-                builder.appendPath(/*endpoint*/"798h-cfqf.json");
-                builder.appendQueryParameter("$$app_token", "XmhHBPPmpGboNkk0yEwWb3R46");
-
-
-                String url = builder.build().toString();
-                Log.i("URL", url);
-
-                // build custom URL here based on params passed in String... strings
-                URL serviceUrl = new URL(url);
-                urlConnection = (HttpsURLConnection) serviceUrl.openConnection();
-                urlConnection.setRequestMethod("GET");
-                InputStream ins = urlConnection.getInputStream();
-                InputStreamReader isr = new InputStreamReader(ins);
-                reader = new BufferedReader(isr);
-                String inputLine;
-                while ((inputLine = reader.readLine()) != null) {
-                    jsonString.append(inputLine);
-                }
-
-                Log.i("JSON", jsonString.toString());
-                urlConnection.disconnect();
-                // only returns null if there is an exception
-                return String.valueOf(jsonString);
-
-        } catch (IOException e) {
-            Log.e(LOG_TAG, "unable to retrieve data");
-            return null;
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (final IOException e) {
-                    Log.e("PlaceholderFragment", "Error closing stream", e);
-                }
-            }
+    @Override
+    public void onTaskCompleted(LandmarkEntity[] landmarks) {
+        mLandmarkEntities = landmarks;
+        // add to map
+        for (LandmarkEntity landmark : mLandmarkEntities) {
+            Marker marker;
+            LatLng latLng = new LatLng(landmark.getLatitude(), landmark.getLongitude());
+            marker = mGoogleMap.addMarker(new MarkerOptions()
+                    .position(latLng)
+                    .title(landmark.getName())
+            );
+            marker.setTag(landmark);
         }
-    }
-
-
-        @Override
-        protected void onPostExecute(String s) {
-            Gson gson = new Gson();
-
-            LandmarkEntity[] landmarkEntities = gson.fromJson(s, LandmarkEntity[].class);
-
-            // iterate through array and get each coordinate point to add marker
-
-            super.onPostExecute(s);
-        }
-
     }
 }

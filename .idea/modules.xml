@@ -4,6 +4,8 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/HistoricSF.iml" filepath="$PROJECT_DIR$/HistoricSF.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/soda-android-example/soda-android-example.iml" filepath="$PROJECT_DIR$/soda-android-example/soda-android-example.iml" />
+      <module fileurl="file://$PROJECT_DIR$/soda-android-sdk/soda-android-sdk.iml" filepath="$PROJECT_DIR$/soda-android-sdk/soda-android-sdk.iml" />
     </modules>
   </component>
 </project>
