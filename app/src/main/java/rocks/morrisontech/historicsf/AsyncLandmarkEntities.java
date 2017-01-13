@@ -19,20 +19,20 @@ import rocks.morrisontech.historicsf.entity.LandmarkEntity;
 /**
  * Created by Quinn on 1/7/17.
  */
-public class DownloadData extends AsyncTask<String, Void, String> {
+public class AsyncLandmarkEntities extends AsyncTask<String, Void, String> {
 
-    private final String LOG_TAG = "DownloadData.class";
+    private final String LOG_TAG = "AsyncLandmarks.class";
     StringBuilder jsonString = new StringBuilder();
     HttpsURLConnection urlConnection;
     BufferedReader reader = null;
-    private OnTaskCompleted dlComplete;
+    private OnLandmarksReceived dlComplete;
 
     // default constructor to get context, etc
-    public DownloadData() {
+    public AsyncLandmarkEntities() {
 
     }
 
-    public DownloadData(OnTaskCompleted activityContext) {
+    public AsyncLandmarkEntities(OnLandmarksReceived activityContext) {
         this.dlComplete = activityContext;
     }
 
@@ -95,8 +95,7 @@ public class DownloadData extends AsyncTask<String, Void, String> {
         Gson gson = new Gson();
 
         LandmarkEntity[] landmarkEntities = gson.fromJson(s, LandmarkEntity[].class);
-        dlComplete.onTaskCompleted(landmarkEntities);
-        // iterate through array and get each coordinate point to add marker
+        dlComplete.onLandmarksReceived(landmarkEntities);
 
         super.onPostExecute(s);
     }
