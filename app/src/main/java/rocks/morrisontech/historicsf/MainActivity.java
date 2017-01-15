@@ -6,7 +6,6 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -20,11 +19,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.squareup.picasso.Picasso;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
-
-import java.io.IOException;
+import java.util.Hashtable;
 
 import rocks.morrisontech.historicsf.entity.LandmarkEntity;
 
@@ -34,7 +29,8 @@ public class MainActivity extends AppCompatActivity
     private static final String LOG_TAG = "Main Activity";
     private GoogleMap mGoogleMap;
     private LandmarkEntity[] mLandmarkEntities;
-
+    // Marker HashMap to track if image is loaded in marker
+    private Hashtable<String, Boolean> markerImageBoolean = new Hashtable<>();
 
 
     @Override
@@ -78,46 +74,55 @@ public class MainActivity extends AppCompatActivity
         LatLng sanFrancisco = new LatLng(37.763147, -122.445662);
 
         mGoogleMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
+
+            View infoWindowView = null;
+            Marker previousMarker = null;
+
             @Override
             public View getInfoWindow(Marker marker) {
                 return null;
             }
 
-           @Override
-           public View getInfoContents(Marker marker) {
-               LandmarkEntity landmarkEntity = (LandmarkEntity) marker.getTag();
+            @Override
+            public View getInfoContents(Marker marker) {
+                LandmarkEntity landmarkEntity = (LandmarkEntity) marker.getTag();
 
-               View infoWindowView = getLayoutInflater().inflate(R.layout.marker_info, null);
+                infoWindowView = getLayoutInflater().inflate(R.layout.marker_info, null);
 
-               TextView landmarkTitleText = (TextView) infoWindowView.findViewById(R.id.title_textView);
-               landmarkTitleText.setText(landmarkEntity.getName());
+                previousMarker = marker;
 
-               // get image
-               ImageView thumbnail = (ImageView) infoWindowView.findViewById(R.id.thumbnail_imageView);
-               String thumbnailUrl = landmarkEntity.getThumbnail();
-               try {
-                   // this line is not working...
-                   Document doc = Jsoup.connect(thumbnailUrl).get();
-                   String title = doc.title();
-                   Log.i(LOG_TAG, title);
-                   Elements media = doc.select("[src]"); // is something wrong here?
-                   String imageUrl = media.attr("src");
-                   Log.i(LOG_TAG, imageUrl);
+                TextView landmarkTitleText = (TextView) infoWindowView.findViewById(R.id.title_textView);
+                landmarkTitleText.setText(landmarkEntity.getName());
 
-                   thumbnail.invalidate();
+                // get image
+                ImageView thumbnail = (ImageView) infoWindowView.findViewById(R.id.thumbnail_imageView);
+                String thumbnailUrl = landmarkEntity.getThumbnail();
 
-                   Picasso.with(MainActivity.this)
-                           // why can I only hard-code this?
-                           .load(imageUrl)
-                           .placeholder(R.drawable.ic_image_black_24px)
-                           .into(thumbnail);
+                String imageUrl = JsoupHelper.getImageUrl(thumbnailUrl);
 
-               } catch (IOException e) {
-                   e.printStackTrace();
-               }
-               return infoWindowView;
-           }
-       });
+                thumbnail.invalidate();
+                boolean imageLoaded = markerImageBoolean.get(marker.getId());
+
+                // TODO: add error handling in case imageUrl comes back null
+                if (imageLoaded /* default: false */) {
+                    Picasso.with(MainActivity.this)
+                            .load(imageUrl)
+                            .placeholder(R.drawable.ic_image_black_24px)
+                            .into(thumbnail);
+                } else {
+                    imageLoaded = true;
+                    markerImageBoolean.put(marker.getId(), imageLoaded);
+                    Picasso.with(MainActivity.this)
+                            .load(imageUrl)
+                            .placeholder(R.drawable.ic_image_black_24px)
+                            .into(thumbnail, new PicassoImageReadyCallback(marker));
+                }
+
+
+                return infoWindowView;
+            }
+        });
+
 
         new GoogleMap.OnMarkerClickListener() {
             @Override
@@ -138,10 +143,14 @@ public class MainActivity extends AppCompatActivity
             Marker marker;
             LatLng latLng = new LatLng(landmark.getLatitude(), landmark.getLongitude());
             marker = mGoogleMap.addMarker(new MarkerOptions()
+                    .snippet(landmark.getThumbnail())
                     .position(latLng)
                     .title(landmark.getName())
             );
+
             marker.setTag(landmark);
+            markerImageBoolean.put(marker.getId(), false);
+
         }
     }
 }
