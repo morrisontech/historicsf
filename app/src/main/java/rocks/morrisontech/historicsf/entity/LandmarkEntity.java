@@ -1,10 +1,12 @@
 package rocks.morrisontech.historicsf.entity;
 
+import java.io.Serializable;
+
 /**
  * Created by Quinn on 12/22/16.
  */
 
-public class LandmarkEntity {
+public class LandmarkEntity implements Serializable {
 
     private String address;
     private String architect;

@@ -1,5 +1,6 @@
 package rocks.morrisontech.historicsf.entity;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,7 +8,7 @@ import java.util.List;
  * Created by Quinn on 12/22/16.
  */
 
-public class GeoJsonEntity {
+public class GeoJsonEntity implements Serializable {
 
     private List<float[]> coordinates = new ArrayList<>();
     private String type;

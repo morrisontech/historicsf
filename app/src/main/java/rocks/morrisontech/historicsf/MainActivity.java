@@ -1,13 +1,13 @@
 package rocks.morrisontech.historicsf;
 
 import android.content.Context;
+import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -18,19 +18,18 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.squareup.picasso.Picasso;
-
-import java.util.Hashtable;
+import com.squareup.picasso.Target;
 
 import rocks.morrisontech.historicsf.entity.LandmarkEntity;
 
 public class MainActivity extends AppCompatActivity
-        implements OnMapReadyCallback, OnLandmarksReceived {
+        implements OnMapReadyCallback, OnLandmarksReceived, GoogleMap.OnInfoWindowClickListener {
 
     private static final String LOG_TAG = "Main Activity";
     private GoogleMap mGoogleMap;
-    private LandmarkEntity[] mLandmarkEntities;
     // Marker HashMap to track if image is loaded in marker
-    private Hashtable<String, Boolean> markerImageBoolean = new Hashtable<>();
+    //private Hashtable<String, Boolean> markerImageBoolean = new Hashtable<>();
+    Target target = null;
 
 
     @Override
@@ -53,7 +52,7 @@ public class MainActivity extends AppCompatActivity
             new AsyncLandmarkEntities(this).execute();
             Picasso.with(MainActivity.this).setLoggingEnabled(true);
         } else {
-            // display error
+            // display error in dialog that allows user to go to settings to change network settings
         }
     }
 
@@ -74,9 +73,8 @@ public class MainActivity extends AppCompatActivity
         LatLng sanFrancisco = new LatLng(37.763147, -122.445662);
 
         mGoogleMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
-
+            // todo: convert this to custom adapter class
             View infoWindowView = null;
-            Marker previousMarker = null;
 
             @Override
             public View getInfoWindow(Marker marker) {
@@ -84,45 +82,28 @@ public class MainActivity extends AppCompatActivity
             }
 
             @Override
-            public View getInfoContents(Marker marker) {
+            public View getInfoContents(final Marker marker) {
                 LandmarkEntity landmarkEntity = (LandmarkEntity) marker.getTag();
 
-                infoWindowView = getLayoutInflater().inflate(R.layout.marker_info, null);
+                if(infoWindowView == null) {
+                    infoWindowView = getLayoutInflater().inflate(R.layout.marker_info, null);
+                }
 
-                previousMarker = marker;
-
+                // TODO: if the following LandmarkEntity values are null, set view visibility to Gone
                 TextView landmarkTitleText = (TextView) infoWindowView.findViewById(R.id.title_textView);
                 landmarkTitleText.setText(landmarkEntity.getName());
 
-                // get image
-                ImageView thumbnail = (ImageView) infoWindowView.findViewById(R.id.thumbnail_imageView);
-                String thumbnailUrl = landmarkEntity.getThumbnail();
+                TextView yearBuiltTextView = (TextView) infoWindowView.findViewById(R.id.year_built);
+                yearBuiltTextView.setText(landmarkEntity.getYear_built());
 
-                String imageUrl = JsoupHelper.getImageUrl(thumbnailUrl);
+                TextView architectTextView = (TextView) infoWindowView.findViewById(R.id.architect_textView);
+                architectTextView.setText(landmarkEntity.getArchitect());
 
-                thumbnail.invalidate();
-                boolean imageLoaded = markerImageBoolean.get(marker.getId());
-
-                // TODO: add error handling in case imageUrl comes back null
-                if (imageLoaded /* default: false */) {
-                    Picasso.with(MainActivity.this)
-                            .load(imageUrl)
-                            .placeholder(R.drawable.ic_image_black_24px)
-                            .into(thumbnail);
-                } else {
-                    imageLoaded = true;
-                    markerImageBoolean.put(marker.getId(), imageLoaded);
-                    Picasso.with(MainActivity.this)
-                            .load(imageUrl)
-                            .placeholder(R.drawable.ic_image_black_24px)
-                            .into(thumbnail, new PicassoImageReadyCallback(marker));
-                }
-
+                mGoogleMap.setOnInfoWindowClickListener(MainActivity.this);
 
                 return infoWindowView;
             }
         });
-
 
         new GoogleMap.OnMarkerClickListener() {
             @Override
@@ -131,13 +112,14 @@ public class MainActivity extends AppCompatActivity
                 return true;
             }
         };
-
         mGoogleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(sanFrancisco, 12f));
     }
 
+
+
     @Override
     public void onLandmarksReceived(LandmarkEntity[] landmarks) {
-        mLandmarkEntities = landmarks;
+        LandmarkEntity[] mLandmarkEntities = landmarks;
         // add to map
         for (LandmarkEntity landmark : mLandmarkEntities) {
             Marker marker;
@@ -149,8 +131,17 @@ public class MainActivity extends AppCompatActivity
             );
 
             marker.setTag(landmark);
-            markerImageBoolean.put(marker.getId(), false);
+            //markerImageBoolean.put(marker.getId(), false);
 
         }
+    }
+
+    @Override
+    public void onInfoWindowClick(Marker marker) {
+        LandmarkEntity landmarkEntity = (LandmarkEntity) marker.getTag();
+        Intent intent = new Intent(this, DetailActivity.class);
+        intent.putExtra("MyClass", landmarkEntity);
+        startActivity(intent);
+
     }
 }

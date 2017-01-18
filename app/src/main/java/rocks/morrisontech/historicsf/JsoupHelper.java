@@ -15,11 +15,12 @@ import java.io.IOException;
 public class JsoupHelper {
 
     private static final String LOG_TAG = "JsoupHelper.class";
-    private static String htmlUrl;
     private static String imageUrl = "";
 
+    public JsoupHelper() {
+    }
 
-    public static String getImageUrl(String urlString) {
+    public static String getImageSourceUrl(String urlString) {
 
         try {
             Document doc = Jsoup.connect(urlString).get();
@@ -30,6 +31,7 @@ public class JsoupHelper {
             Log.i(LOG_TAG, imageUrl);
         } catch (IOException e) {
             e.printStackTrace();
+            return null;
         }
         return imageUrl;
     }
