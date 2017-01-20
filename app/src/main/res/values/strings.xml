@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Historic SF</string>
+    <string name="default_landmark_name_string">Landmark Name</string>
+    <string name="thumbnail_content_description_string">thumbnail image</string>
+    <string name="LANDMARK_ENTITY_INTENT_ID">rocks.morrisontech.historicsf.landmarkEntity</string>
+    <string name="building_name_default_text">Building Name</string>
+    <string name="thumbnail_image_content_string">Thumbnail Image</string>
 </resources>

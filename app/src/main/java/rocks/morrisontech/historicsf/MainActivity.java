@@ -1,14 +1,14 @@
 package rocks.morrisontech.historicsf;
 
 import android.content.Context;
+import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
+import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -17,23 +17,20 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.gson.Gson;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
-
-import javax.net.ssl.HttpsURLConnection;
+import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
 
 import rocks.morrisontech.historicsf.entity.LandmarkEntity;
 
 public class MainActivity extends AppCompatActivity
-        implements OnMapReadyCallback {
+        implements OnMapReadyCallback, OnLandmarksReceived, GoogleMap.OnInfoWindowClickListener {
 
     private static final String LOG_TAG = "Main Activity";
     private GoogleMap mGoogleMap;
+    // Marker HashMap to track if image is loaded in marker
+    //private Hashtable<String, Boolean> markerImageBoolean = new Hashtable<>();
+    Target target = null;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,14 +40,19 @@ public class MainActivity extends AppCompatActivity
         ConnectivityManager connMgr = (ConnectivityManager)
                 getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+
         if (networkInfo != null && networkInfo.isConnected()) {
             // fetch data
             MapFragment mMapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.fragment_map);
             mMapFragment.getMapAsync(this);
             // async task to download initial historic districts and sites
-            new DownloadData().execute();
+            new AsyncLandmarkEntities(this).execute();
+            Picasso.with(MainActivity.this).setLoggingEnabled(true);
         } else {
-            // display error
+            // display error in dialog that allows user to go to settings to change network settings
         }
     }
 
@@ -59,6 +61,7 @@ public class MainActivity extends AppCompatActivity
      * OnMarkerClickListener
      * OnPolygonClickListener
      * setMapToolbarEnabled(true)
+     *
      * @param googleMap
      */
     @Override
@@ -66,21 +69,55 @@ public class MainActivity extends AppCompatActivity
         mGoogleMap = googleMap;
         mGoogleMap.getUiSettings().setMapToolbarEnabled(true);
 
+        // used to set center view
         LatLng sanFrancisco = new LatLng(37.763147, -122.445662);
 
-       mGoogleMap.addMarker(new MarkerOptions().position(sanFrancisco));
-       mGoogleMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
-           @Override
-           public View getInfoWindow(Marker marker) {
-               return null;
-           }
+        mGoogleMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
+            // todo: convert this to custom adapter class
+            View infoWindowView = null;
 
-           @Override
-           public View getInfoContents(Marker marker) {
-               View infoWindowView = getLayoutInflater().inflate(R.layout.marker_info, null);
-               return infoWindowView;
-           }
-       });
+            @Override
+            public View getInfoWindow(Marker marker) {
+                return null;
+            }
+
+            @Override
+            public View getInfoContents(final Marker marker) {
+                LandmarkEntity landmarkEntity = (LandmarkEntity) marker.getTag();
+
+                if(infoWindowView == null) {
+                    infoWindowView = getLayoutInflater().inflate(R.layout.marker_info, null);
+                }
+
+                // TODO: if the following LandmarkEntity values are null, set view visibility to Gone
+                TextView landmarkTitleText = (TextView) infoWindowView.findViewById(R.id.title_textView);
+                if (landmarkEntity.getName() != null) {
+                    landmarkTitleText.setVisibility(View.VISIBLE);
+                    landmarkTitleText.setText(landmarkEntity.getName());
+                } else {
+                    landmarkTitleText.setVisibility(View.GONE);
+                }
+
+                TextView yearBuiltTextView = (TextView) infoWindowView.findViewById(R.id.year_built);
+                if (landmarkEntity.getYear_built() != null) {
+                    yearBuiltTextView.setVisibility(View.VISIBLE);
+                    yearBuiltTextView.setText(landmarkEntity.getYear_built());
+                } else {
+                    yearBuiltTextView.setVisibility(View.GONE);
+                }
+
+                TextView architectTextView = (TextView) infoWindowView.findViewById(R.id.architect_textView);
+                if (landmarkEntity.getArchitect() != null) {
+                    architectTextView.setVisibility(View.VISIBLE);
+                    architectTextView.setText(landmarkEntity.getArchitect());
+                } else {
+                    architectTextView.setVisibility(View.GONE);
+                }
+                mGoogleMap.setOnInfoWindowClickListener(MainActivity.this);
+
+                return infoWindowView;
+            }
+        });
 
         new GoogleMap.OnMarkerClickListener() {
             @Override
@@ -89,81 +126,35 @@ public class MainActivity extends AppCompatActivity
                 return true;
             }
         };
-
         mGoogleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(sanFrancisco, 12f));
     }
 
-    private class DownloadData extends AsyncTask<String, Void, String> {
 
+    @Override
+    public void onLandmarksReceived(LandmarkEntity[] landmarks) {
+        LandmarkEntity[] mLandmarkEntities = landmarks;
+        // add to map
+        for (LandmarkEntity landmark : mLandmarkEntities) {
+            Marker marker;
+            LatLng latLng = new LatLng(landmark.getLatitude(), landmark.getLongitude());
+            marker = mGoogleMap.addMarker(new MarkerOptions()
+                    .snippet(landmark.getThumbnail())
+                    .position(latLng)
+                    .title(landmark.getName())
+            );
 
-        StringBuilder jsonString = new StringBuilder();
-        HttpsURLConnection urlConnection;
-        BufferedReader reader = null;
+            marker.setTag(landmark);
+            //markerImageBoolean.put(marker.getId(), false);
 
-        @Override
-        protected String doInBackground(String... strings) {
-
-            // filter params
-            String searchParam;
-
-            // build uri
-            // download and return json string
-
-            try {
-
-                Uri.Builder builder = new Uri.Builder();
-                builder.scheme("https");
-                builder.authority("data.sfgov.org");
-                builder.appendPath("resource");
-                builder.appendPath(/*endpoint*/"798h-cfqf.json");
-                builder.appendQueryParameter("$$app_token", "XmhHBPPmpGboNkk0yEwWb3R46");
-
-
-                String url = builder.build().toString();
-                Log.i("URL", url);
-
-                // build custom URL here based on params passed in String... strings
-                URL serviceUrl = new URL(url);
-                urlConnection = (HttpsURLConnection) serviceUrl.openConnection();
-                urlConnection.setRequestMethod("GET");
-                InputStream ins = urlConnection.getInputStream();
-                InputStreamReader isr = new InputStreamReader(ins);
-                reader = new BufferedReader(isr);
-                String inputLine;
-                while ((inputLine = reader.readLine()) != null) {
-                    jsonString.append(inputLine);
-                }
-
-                Log.i("JSON", jsonString.toString());
-                urlConnection.disconnect();
-                // only returns null if there is an exception
-                return String.valueOf(jsonString);
-
-        } catch (IOException e) {
-            Log.e(LOG_TAG, "unable to retrieve data");
-            return null;
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (final IOException e) {
-                    Log.e("PlaceholderFragment", "Error closing stream", e);
-                }
-            }
         }
     }
 
-
-        @Override
-        protected void onPostExecute(String s) {
-            Gson gson = new Gson();
-
-            LandmarkEntity[] landmarkEntities = gson.fromJson(s, LandmarkEntity[].class);
-
-            // iterate through array and get each coordinate point to add marker
-
-            super.onPostExecute(s);
-        }
+    @Override
+    public void onInfoWindowClick(Marker marker) {
+        LandmarkEntity landmarkEntity = (LandmarkEntity) marker.getTag();
+        Intent intent = new Intent(this, DetailActivity.class);
+        intent.putExtra("MyClass", landmarkEntity);
+        startActivity(intent);
 
     }
 }
