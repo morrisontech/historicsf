@@ -18,7 +18,6 @@ public class DetailActivity extends AppCompatActivity {
         setContentView(R.layout.activity_detail);
 
         LandmarkEntity landmarkEntity = (LandmarkEntity) getIntent().getSerializableExtra("MyClass");
-        Toast.makeText(this, landmarkEntity.getName(), Toast.LENGTH_SHORT).show();
 
         TextView buildingNameTextView = (TextView) findViewById(R.id.buildingNameTextView);
         buildingNameTextView.setText(landmarkEntity.getName());
@@ -38,8 +37,10 @@ public class DetailActivity extends AppCompatActivity {
         // todo: create high resolution images option to download full-size images
         Picasso.with(getApplicationContext())
                 .load(imageSourceUrl)
-                .fit()
+                .resize(300, 300)
+                .centerInside()
                 .placeholder(R.drawable.ic_photo_black_48px)
                 .into(thumbnailImageView);
     }
+
 }

@@ -91,14 +91,28 @@ public class MainActivity extends AppCompatActivity
 
                 // TODO: if the following LandmarkEntity values are null, set view visibility to Gone
                 TextView landmarkTitleText = (TextView) infoWindowView.findViewById(R.id.title_textView);
-                landmarkTitleText.setText(landmarkEntity.getName());
+                if (landmarkEntity.getName() != null) {
+                    landmarkTitleText.setVisibility(View.VISIBLE);
+                    landmarkTitleText.setText(landmarkEntity.getName());
+                } else {
+                    landmarkTitleText.setVisibility(View.GONE);
+                }
 
                 TextView yearBuiltTextView = (TextView) infoWindowView.findViewById(R.id.year_built);
-                yearBuiltTextView.setText(landmarkEntity.getYear_built());
+                if (landmarkEntity.getYear_built() != null) {
+                    yearBuiltTextView.setVisibility(View.VISIBLE);
+                    yearBuiltTextView.setText(landmarkEntity.getYear_built());
+                } else {
+                    yearBuiltTextView.setVisibility(View.GONE);
+                }
 
                 TextView architectTextView = (TextView) infoWindowView.findViewById(R.id.architect_textView);
-                architectTextView.setText(landmarkEntity.getArchitect());
-
+                if (landmarkEntity.getArchitect() != null) {
+                    architectTextView.setVisibility(View.VISIBLE);
+                    architectTextView.setText(landmarkEntity.getArchitect());
+                } else {
+                    architectTextView.setVisibility(View.GONE);
+                }
                 mGoogleMap.setOnInfoWindowClickListener(MainActivity.this);
 
                 return infoWindowView;
@@ -114,7 +128,6 @@ public class MainActivity extends AppCompatActivity
         };
         mGoogleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(sanFrancisco, 12f));
     }
-
 
 
     @Override
