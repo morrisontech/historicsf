@@ -15,21 +15,59 @@
     <TextView
         android:text="@string/building_name_default_text"
         android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
         android:id="@+id/buildingNameTextView"
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true"
         android:textSize="24sp"
-        android:contentDescription="@string/building_name_default_text"
-        android:layout_width="300dp" />
+        android:textColor="#234a89"
+        android:shadowDx="1"
+        android:shadowDy="1"
+        android:shadowRadius="2"
+        android:shadowColor="#4776c1"
+        android:contentDescription="@string/building_name_default_text" />
+
+    <TextView
+        android:text="@string/year_built_text_view_default"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:layout_below="@id/buildingNameTextView"
+        android:id="@+id/year_built"
+        android:textColor="#0d3d89"
+        android:textSize="18sp"
+        android:contentDescription="@string/year_built_text_view_default" />
+
+    <TextView
+        android:text="@string/architect_or_firm_default_string"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:layout_below="@id/year_built"
+        android:id="@+id/architect_textView"
+        android:textSize="18sp"
+        android:textColor="#0d3d89"
+        android:contentDescription="@string/architect_or_firm_default_string" />
 
     <ImageView
         android:id="@+id/buildingImageView"
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
         android:layout_marginTop="24dp"
-        android:layout_below="@+id/buildingNameTextView"
+        android:layout_below="@id/architect_textView"
         android:layout_alignParentStart="true"
         android:elevation="10dp"
-        android:background="@color/colorPrimaryDark"
+        android:background="#4776c1"
         android:contentDescription="@string/thumbnail_image_content_string"/>
+
+    <TextView
+        android:id="@+id/descriptionTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/designationLinkTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/buildingImageView"
+        android:paddingTop="15dp"/>
+
 </RelativeLayout>

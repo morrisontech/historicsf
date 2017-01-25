@@ -5,4 +5,6 @@
     <string name="LANDMARK_ENTITY_INTENT_ID">rocks.morrisontech.historicsf.landmarkEntity</string>
     <string name="building_name_default_text">Building Name</string>
     <string name="thumbnail_image_content_string">Thumbnail Image</string>
+    <string name="year_built_text_view_default">Year Built</string>
+    <string name="architect_or_firm_default_string">Architect or Firm</string>
 </resources>
